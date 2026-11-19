@@ -13,6 +13,10 @@ WORKDIR /app
 # The wrapper jar is committed, so this step needs no curl or wget.
 COPY .mvn/ .mvn/
 COPY mvnw pom.xml ./
+# Some push routes drop the executable bit on mvnw; set it explicitly.
+# Found by the first live Railway deploy test on 2026-11-19, which failed
+# with "./mvnw: Permission denied" (exit 126).
+RUN chmod +x ./mvnw
 RUN ./mvnw -B dependency:go-offline
 
 COPY src/ src/
@@ -21,9 +25,12 @@ RUN ./mvnw -B package -DskipTests
 FROM amazoncorretto:21.0.13@sha256:3284a05cb82e9bceb4857f9d70788a6f72681d9070b550ae5f477b5e3dc81a5c AS runtime
 WORKDIR /app
 
-RUN groupadd --system app && useradd --system --gid app app
+# The Corretto runtime image ships no groupadd/useradd (shadow-utils is
+# absent); the first live Railway deploy test on 2026-11-19 failed with
+# "groupadd: command not found". Run as a fixed numeric UID instead, which
+# needs no passwd entry. app.jar is copied world-readable, so this works.
 COPY --from=build /app/target/app.jar app.jar
-USER app
+USER 10001
 
 # Railway sets PORT, and the app reads it. 8080 is the local default.
 EXPOSE 8080
