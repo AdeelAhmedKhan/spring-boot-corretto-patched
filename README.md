@@ -135,6 +135,14 @@ builds the `Dockerfile`, and health checks the service on
 `/actuator/health`. No variables are required. Set `JAVA_OPTS` only if
 you need JVM flags.
 
+Live deploy test, 19 November 2026: this template was deployed on
+Railway end to end. The Docker build succeeded, the service came up
+healthy on `/actuator/health`, and `GET /api/runtime` reported
+`java.version` 21.0.13.1 from Amazon, the patched build. The first test
+run caught two Dockerfile bugs, a lost executable bit on `mvnw` and a
+user creation step the Corretto image cannot run. Both are fixed in the
+current `Dockerfile`.
+
 ## Updating the JDK pin
 
 When a newer patched Corretto build ships:
